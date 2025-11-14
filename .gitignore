@@ -1,0 +1,15 @@
+node_modules/
+dist/
+downloads/
+*.log
+.env
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos temporários
+*.tmp
+*.temp
