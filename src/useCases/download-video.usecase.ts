@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { DownloadOptions, DownloadResult, VideoQuality } from '../types';
+import { DownloadOptions, DownloadResult, VideoQuality, DownloadType } from '../types';
 import { YouTubeService } from '../services/youtube.service';
 import { FileUtils } from '../utils/file';
 import { FormatUtils } from '../utils/format';
@@ -11,57 +11,69 @@ export class DownloadVideoUseCase {
 
   async execute(options: DownloadOptions): Promise<DownloadResult> {
     try {
-      console.log('\n🔍 Verificando URL...\n');
+      console.log('\n🔍 Validating URL...\n');
 
       if (!this.youtubeService.validateURL(options.url)) {
-        console.error('❌ URL inválida do YouTube!');
-        return { success: false, error: 'URL inválida' };
+        console.error('❌ Invalid YouTube URL!');
+        return { success: false, error: 'Invalid URL' };
       }
 
-      console.log('📋 Obtendo informações do vídeo...\n');
+      const isMusic = this.youtubeService.isYouTubeMusic(options.url);
+      const downloadType: DownloadType = options.downloadType || (isMusic ? 'audio' : 'video');
+
+      console.log('📋 Getting information...\n');
 
       const info = await this.youtubeService.getVideoInfo(options.url);
-      this.displayVideoInfo(info);
+      this.displayVideoInfo(info, downloadType);
 
       const downloadsDir = options.outputPath || FileUtils.getDownloadsDirectory();
       FileUtils.ensureDirectoryExists(downloadsDir);
 
-      const filename = FormatUtils.sanitizeFilename(info.title) + '.mp4';
+      const extension = downloadType === 'audio' ? '.mp3' : '.mp4';
+      const filename = FormatUtils.sanitizeFilename(info.title) + extension;
       const filePath = path.join(downloadsDir, filename);
 
       if (FileUtils.fileExists(filePath)) {
-        console.log('⚠️  Arquivo já existe! Sobrescrevendo...\n');
+        console.log('⚠️  File already exists! Overwriting...\n');
       }
 
-      console.log('⬇️  Iniciando download...\n');
+      console.log('⬇️  Starting download...\n');
 
-      await this.downloadVideo(options.url, options.quality, filePath);
+      await this.downloadVideo(options.url, options.quality, filePath, downloadType);
 
-      console.log('\n\n✅ Download concluído!');
-      console.log('📁 Arquivo salvo em:', filePath);
+      console.log('\n\n✅ Download completed!');
+      console.log('📁 File saved at:', filePath);
       console.log('');
 
       return { success: true, filePath };
     } catch (error: any) {
-      this.handleError(error);
+      this.handleError(error, options.url);
       return { success: false, error: error.message };
     }
   }
 
-  private displayVideoInfo(info: { title: string; author: string; duration: number }): void {
-    console.log('📹 Título:', info.title);
-    console.log('👤 Autor:', info.author);
-    console.log('⏱️  Duração:', FormatUtils.formatDuration(info.duration));
+  private displayVideoInfo(
+    info: { title: string; author: string; duration: number },
+    downloadType: DownloadType
+  ): void {
+    const icon = downloadType === 'audio' ? '🎵' : '📹';
+    const type = downloadType === 'audio' ? 'Music' : 'Video';
+    console.log(`${icon} Title:`, info.title);
+    console.log('👤 Author:', info.author);
+    console.log('⏱️  Duration:', FormatUtils.formatDuration(info.duration));
+    console.log('📦 Type:', type);
     console.log('');
   }
 
   private async downloadVideo(
     url: string,
     qualityOption: VideoQuality,
-    filePath: string
+    filePath: string,
+    downloadType: DownloadType = 'video'
   ): Promise<void> {
     const quality = this.mapQuality(qualityOption);
-    const video = this.youtubeService.createDownloadStream(url, quality);
+    const isAudioOnly = downloadType === 'audio';
+    const video = this.youtubeService.createDownloadStream(url, quality, isAudioOnly);
     const writeStream = fs.createWriteStream(filePath);
 
     let downloadedBytes = 0;
@@ -71,7 +83,7 @@ export class DownloadVideoUseCase {
     video.on('response', (response) => {
       totalBytes = parseInt(response.headers['content-length'] || '0');
       if (totalBytes > 0) {
-        console.log('📦 Tamanho total:', FormatUtils.formatBytes(totalBytes));
+        console.log('📦 Total size:', FormatUtils.formatBytes(totalBytes));
       }
     });
 
@@ -81,7 +93,7 @@ export class DownloadVideoUseCase {
     });
 
     video.on('error', (err) => {
-      console.error('\n❌ Erro durante download:', err.message);
+      console.error('\n❌ Error during download:', err.message);
       writeStream.close();
     });
 
@@ -109,22 +121,27 @@ export class DownloadVideoUseCase {
       const elapsed = (Date.now() - startTime) / 1000;
       const speed = downloadedBytes / elapsed;
       process.stdout.write(
-        `\r📊 Progresso: ${percent}% | ${FormatUtils.formatBytes(downloadedBytes)} / ${FormatUtils.formatBytes(totalBytes)} | ${FormatUtils.formatBytes(speed)}/s`
+        `\r📊 Progress: ${percent}% | ${FormatUtils.formatBytes(downloadedBytes)} / ${FormatUtils.formatBytes(totalBytes)} | ${FormatUtils.formatBytes(speed)}/s`
       );
     } else {
-      process.stdout.write(`\r📊 Baixado: ${FormatUtils.formatBytes(downloadedBytes)}`);
+      process.stdout.write(`\r📊 Downloaded: ${FormatUtils.formatBytes(downloadedBytes)}`);
     }
   }
 
-  private handleError(error: any): void {
-    console.error('\n❌ Erro ao fazer download:', error.message);
+  private handleError(error: any, url?: string): void {
+    console.error('\n❌ Error downloading:', error.message);
 
     if (error.message.includes('403')) {
-      ERROR_MESSAGES[403].forEach((msg) => console.error(msg));
+      // Check if it's YouTube Music for specific message
+      if (url && this.youtubeService.isYouTubeMusic(url)) {
+        ERROR_MESSAGES['403_music'].forEach((msg: string) => console.error(msg));
+      } else {
+        ERROR_MESSAGES['403'].forEach((msg: string) => console.error(msg));
+      }
     } else if (error.message.includes('410')) {
-      ERROR_MESSAGES[410].forEach((msg) => console.error(msg));
+      ERROR_MESSAGES['410'].forEach((msg: string) => console.error(msg));
     } else if (error.message.includes('Could not extract')) {
-      ERROR_MESSAGES.extract.forEach((msg) => console.error(msg));
+      ERROR_MESSAGES['extract'].forEach((msg: string) => console.error(msg));
     }
     console.log('');
   }

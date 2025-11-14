@@ -1,4 +1,5 @@
 export type VideoQuality = 'highest' | 'lowest' | 'medium';
+export type DownloadType = 'video' | 'audio';
 
 export interface VideoInfo {
   title: string;
@@ -17,6 +18,7 @@ export interface DownloadOptions {
   url: string;
   quality: VideoQuality;
   outputPath?: string;
+  downloadType?: DownloadType;
 }
 
 export interface DownloadResult {

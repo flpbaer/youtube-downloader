@@ -9,6 +9,10 @@ export class YouTubeService {
     return ytdl.validateURL(url);
   }
 
+  isYouTubeMusic(url: string): boolean {
+    return url.includes('music.youtube.com');
+  }
+
   async getVideoInfo(url: string): Promise<VideoInfo> {
     const info = await ytdl.getInfo(url, {
       agent: this.agent,
@@ -22,10 +26,10 @@ export class YouTubeService {
     };
   }
 
-  createDownloadStream(url: string, quality: string) {
+  createDownloadStream(url: string, quality: string, audioOnly: boolean = false) {
     return ytdl(url, {
-      quality: quality as any,
-      filter: 'audioandvideo',
+      quality: audioOnly ? 'highestaudio' : (quality as any),
+      filter: audioOnly ? 'audioonly' : 'audioandvideo',
       agent: this.agent,
       requestOptions: YTDL_CONFIG.requestOptions,
     });

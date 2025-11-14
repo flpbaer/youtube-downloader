@@ -9,17 +9,24 @@ export const YTDL_CONFIG = {
   },
 };
 
-export const ERROR_MESSAGES = {
-  403: [
-    '💡 Dicas para resolver o erro 403:',
-    '   1. Aguarde alguns minutos e tente novamente',
-    '   2. Tente com outro vídeo do YouTube',
-    '   3. Verifique se o vídeo não está privado ou com restrições',
-    '   4. O YouTube pode estar limitando requisições temporariamente',
+export const ERROR_MESSAGES: Record<string, string[]> = {
+  '403': [
+    '💡 Tips to solve 403 error:',
+    '   1. Wait a few minutes and try again',
+    '   2. Try with another YouTube video',
+    '   3. Check if the video is not private or restricted',
+    '   4. YouTube may be temporarily limiting requests',
   ],
-  410: ['💡 Dica: Este vídeo pode estar com restrições ou foi removido.'],
-  extract: [
-    '💡 Dica: Erro ao extrair informações do vídeo.',
-    '   Tente atualizar a biblioteca: npm update @distube/ytdl-core',
+  '403_music': [
+    '💡 Error 403 - YouTube Music:',
+    '   ⚠️  Many YouTube Music songs have download protection',
+    '   ✅ Try using a regular YouTube video instead of YouTube Music',
+    '   ✅ Search for the same song on regular YouTube (youtube.com) and download as audio',
+    '   💡 Tip: Copy the song name and search on regular YouTube',
+  ],
+  '410': ['💡 Tip: This video may be restricted or has been removed.'],
+  'extract': [
+    '💡 Tip: Error extracting video information.',
+    '   Try updating the library: npm update @distube/ytdl-core',
   ],
 };

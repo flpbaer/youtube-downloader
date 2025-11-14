@@ -1,5 +1,5 @@
 import readline from 'readline';
-import { VideoQuality } from '../types';
+import { VideoQuality, DownloadType } from '../types';
 import { DownloadVideoUseCase } from '../useCases/download-video.usecase';
 
 export class Menu {
@@ -21,26 +21,57 @@ export class Menu {
   }
 
   private askForURL(): void {
-    this.rl.question('📎 Cole a URL do vídeo do YouTube: ', (url) => {
+    this.rl.question('📎 Paste the YouTube video URL: ', (url) => {
       if (!url || url.trim() === '') {
-        console.log('❌ URL não fornecida!');
+        console.log('❌ URL not provided!');
         this.rl.close();
         return;
       }
 
-      this.askForQuality(url.trim());
+      const trimmedUrl = url.trim();
+      
+      // Detect if it's YouTube Music IMMEDIATELY
+      const isMusic = trimmedUrl.includes('music.youtube.com');
+      
+      if (isMusic) {
+        console.log('\n═══════════════════════════════════════════════════════');
+        console.log('🎵 YOUTUBE MUSIC DETECTED!');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📥 Automatic download in MP3 format');
+        console.log('═══════════════════════════════════════════════════════');
+        this.askForQuality(trimmedUrl, 'audio');
+      } else {
+        this.askForDownloadType(trimmedUrl);
+      }
     });
   }
 
-  private askForQuality(url: string): void {
+  private askForDownloadType(url: string): void {
     this.rl.question(
-      '\n🎯 Escolha a qualidade (highest/lowest/medium) [highest]: ',
+      '\n🎬 Download as (video/audio) [video]: ',
+      (type) => {
+        const downloadType = (type.trim().toLowerCase() || 'video') as DownloadType;
+        
+        if (downloadType !== 'video' && downloadType !== 'audio') {
+          console.log('⚠️  Invalid option, using "video"');
+          this.askForQuality(url, 'video');
+        } else {
+          this.askForQuality(url, downloadType);
+        }
+      }
+    );
+  }
+
+  private askForQuality(url: string, downloadType: DownloadType): void {
+    this.rl.question(
+      '\n🎯 Choose quality (highest/lowest/medium) [highest]: ',
       async (quality) => {
         const selectedQuality = (quality.trim() || 'highest') as VideoQuality;
 
         await this.downloadVideoUseCase.execute({
           url,
           quality: selectedQuality,
+          downloadType,
         });
 
         this.askForAnotherDownload();
@@ -49,11 +80,11 @@ export class Menu {
   }
 
   private askForAnotherDownload(): void {
-    this.rl.question('\n🔄 Deseja baixar outro vídeo? (s/n): ', (answer) => {
-      if (answer.toLowerCase() === 's' || answer.toLowerCase() === 'sim') {
+    this.rl.question('\n🔄 Download another video? (y/n): ', (answer) => {
+      if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
         this.show();
       } else {
-        console.log('\n👋 Até logo!\n');
+        console.log('\n👋 Goodbye!\n');
         this.rl.close();
       }
     });

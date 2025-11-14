@@ -37,10 +37,24 @@ npm run dev
 ```
 
 2. Paste the YouTube video URL when prompted
-3. Choose the video quality (highest/lowest/medium)
-4. Wait for the download to complete
+3. Choose download type (video/audio) - **automatic for YouTube Music links!**
+4. Choose the quality (highest/lowest/medium)
+5. Wait for the download to complete
 
-Videos will be saved in the `downloads/` folder.
+Files will be saved in the `downloads/` folder.
+
+### 🎵 YouTube Music Support
+
+When you paste a YouTube Music URL (contains `music.youtube.com`), the application automatically:
+
+- Detects it's a music link
+- Downloads only the audio
+- Saves as MP3 format
+
+For regular YouTube videos, you can choose:
+
+- **video**: Downloads video+audio as MP4
+- **audio**: Downloads only audio as MP3
 
 ## 🏗️ Project Structure
 
@@ -67,6 +81,8 @@ src/
 - ✅ TypeScript for type safety
 - ✅ Clean architecture with use cases
 - ✅ Download YouTube videos
+- ✅ Download YouTube Music as MP3 (automatic detection)
+- ✅ Choose between video or audio format
 - ✅ Display video information (title, author, duration)
 - ✅ Progress bar during download
 - ✅ Multiple quality options
