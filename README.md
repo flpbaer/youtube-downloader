@@ -109,10 +109,3 @@ If you receive a 403 error:
 - Run: `npm update @distube/ytdl-core`
 - If it persists: `rm -rf node_modules package-lock.json && npm install`
 
-## 📝 License
-
-MIT
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to open issues or pull requests.
